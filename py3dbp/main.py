@@ -730,3 +730,151 @@ class Painter:
         ax.set_ylim3d([y_middle - plot_radius, y_middle + plot_radius])
         ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
 
+
+import plotly.graph_objects as go
+
+
+class AlexPainter:
+    def __init__(self, bins):
+        self.items = bins.items
+        self.width = bins.width
+        self.height = bins.height
+        self.depth = bins.depth
+
+    def _plotCube(self, fig, x, y, z, dx, dy, dz, color="red", text="", alpha=0.5):
+        """Plot a cube using Plotly."""
+        # Define vertices of the cube
+        vertices = np.array(
+            [
+                [x, y, z],  # 0
+                [x + dx, y, z],  # 1
+                [x + dx, y + dy, z],  # 2
+                [x, y + dy, z],  # 3
+                [x, y, z + dz],  # 4
+                [x + dx, y, z + dz],  # 5
+                [x + dx, y + dy, z + dz],  # 6
+                [x, y + dy, z + dz],  # 7
+            ]
+        )
+
+        # Define the six faces (each as two triangles)
+        faces = [
+            [0, 1, 2, 3],  # Bottom
+            [4, 5, 6, 7],  # Top
+            [0, 1, 5, 4],  # Side 1
+            [2, 3, 7, 6],  # Side 2
+            [0, 3, 7, 4],  # Side 3
+            [1, 2, 6, 5],  # Side 4
+        ]
+
+        # Add each face to the figure
+        for face in faces:
+            fig.add_trace(
+                go.Mesh3d(
+                    x=vertices[face, 0],
+                    y=vertices[face, 1],
+                    z=vertices[face, 2],
+                    i=[0, 1, 2],
+                    j=[1, 2, 3],
+                    k=[2, 3, 0],
+                    color=color,
+                    opacity=alpha,
+                )
+            )
+
+        # Add text label at the center of the cube
+        if text:
+            fig.add_trace(
+                go.Scatter3d(
+                    x=[x + dx / 2],
+                    y=[y + dy / 2],
+                    z=[z + dz / 2],
+                    text=[text],
+                    mode="text",
+                )
+            )
+
+    def _plotCylinder(
+        self, fig, x, y, z, radius, height, color="red", text="", alpha=0.2
+    ):
+        """Plot a cylinder using Plotly."""
+        theta = np.linspace(0, 2 * np.pi, 100)
+        x_circle = radius * np.cos(theta) + x + radius
+        y_circle = radius * np.sin(theta) + y + radius
+
+        # Top and bottom circles
+        fig.add_trace(
+            go.Scatter3d(
+                x=x_circle,
+                y=y_circle,
+                z=[z] * 100,
+                mode="lines",
+                fill="toself",
+                opacity=alpha,
+                line_color=color,
+            )
+        )
+        fig.add_trace(
+            go.Scatter3d(
+                x=x_circle,
+                y=y_circle,
+                z=[z + height] * 100,
+                mode="lines",
+                fill="toself",
+                opacity=alpha,
+                line_color=color,
+            )
+        )
+
+        # Add text label at the center
+        if text:
+            fig.add_trace(
+                go.Scatter3d(
+                    x=[x + radius],
+                    y=[y + radius],
+                    z=[z + height / 2],
+                    text=[text],
+                    mode="text",
+                )
+            )
+
+    def plotBoxAndItems(self, title="", alpha=0.2, write_num=False):
+        """Plot the bin and its items using Plotly."""
+        fig = go.Figure()
+
+        # Plot bin (outer box)
+        self._plotCube(
+            fig,
+            0,
+            0,
+            0,
+            self.width,
+            self.height,
+            self.depth,
+            color="black",
+            alpha=alpha,
+        )
+
+        # Plot items
+        for item in self.items:
+            x, y, z = item.position
+            w, h, d = item.getDimension()
+            color = item.color
+            text = item.partno if write_num else ""
+
+            if item.typeof == "cube":
+                self._plotCube(
+                    fig, x, y, z, w, h, d, color=color, text=text, alpha=alpha
+                )
+            elif item.typeof == "cylinder":
+                self._plotCylinder(
+                    fig, x, y, z, w / 2, h, color=color, text=text, alpha=alpha
+                )
+
+        fig.update_layout(
+            scene=dict(
+                xaxis_title="cm", yaxis_title="cm", zaxis_title="cm", aspectmode="data"
+            ),
+            title=title,
+        )
+        fig.show()

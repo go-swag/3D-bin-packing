@@ -27,6 +27,26 @@
   - [License](#license)
 
 
+# Dev Setup
+
+Create venv
+
+```bash
+python3.11 -m venv .venv
+```
+
+Activate venv
+
+```bash
+source .venv/bin/activate
+```
+
+Install requirements.txt
+
+```bash
+pip install -r requirements.txt
+```
+
 
 ## Improvement
 1. **fix item float :**
